@@ -1,4 +1,5 @@
 const CACHE = 'foodcontrol-v3';
+const BASE = 'https://test-biblico.github.io/foodcontrol/';
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => { self.clients.claim(); });
 self.addEventListener('fetch', e => {
