@@ -1,0 +1,33 @@
+{
+  "name": "FoodControl PRO",
+  "short_name": "FoodControl",
+  "description": "Control de stock, recetas, plan alimentario y compra inteligente para Paraguay",
+  "start_url": "/",
+  "scope": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1117",
+  "theme_color": "#22c55e",
+  "lang": "es",
+  "dir": "ltr",
+  "categories": [
+    "food",
+    "lifestyle",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
