@@ -4,21 +4,26 @@
   "description": "Control de stock, recetas, plan alimentario y compra inteligente para Paraguay",
   "start_url": "https://test-biblico.github.io/foodcontrol/",
   "scope": "https://test-biblico.github.io/foodcontrol/",
+  "id": "https://test-biblico.github.io/foodcontrol/",
   "display": "standalone",
-  "theme_color": "#22c55e",
+  "orientation": "portrait",
   "background_color": "#0f1117",
+  "theme_color": "#22c55e",
+  "lang": "es",
+  "dir": "ltr",
+  "categories": ["food", "lifestyle", "utilities"],
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='42' fill='%230f1117'/%3E%3Ctext x='96' y='110' font-size='84' text-anchor='middle' dominant-baseline='central'%3E🥗%3C/text%3E%3C/svg%3E",
+      "src": "https://test-biblico.github.io/foodcontrol/icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230f1117'/%3E%3Ctext x='256' y='280' font-size='224' text-anchor='middle' dominant-baseline='central'%3E🥗%3C/text%3E%3C/svg%3E",
+      "src": "https://test-biblico.github.io/foodcontrol/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
-}
+} (corregir el manifest)
