@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1917,59 +1916,6 @@ function descargarPlantilla() {
 // ============================
 setGreeting();
 renderDashboard();
-<script>
-// ===== SERVICE WORKER PARA HABILITAR INSTALACIÓN =====
-if ('serviceWorker' in navigator) {
-  const swCode = `const CACHE = 'foodcontrol-v1';
-self.addEventListener('install', e => self.skipWaiting());
-self.addEventListener('fetch', e => {
-  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-});`;
-
-  const blob = new Blob([swCode], {type: 'application/javascript'});
-  const swUrl = URL.createObjectURL(blob);
-  
-  navigator.serviceWorker.register(swUrl)
-    .then(() => console.log('✅ Service Worker OK'))
-    .catch(err => console.warn('⚠️ SW error:', err));
-}
-
-// ===== MANIFEST CORREGIDO SIN MODIFICAR PNG =====
-const manifest = {
-  "name": "FoodControl PRO",
-  "short_name": "FoodControl",
-  "description": "Control de stock, recetas, plan alimentario y compra inteligente para Paraguay",
-  "start_url": "https://test-biblico.github.io/foodcontrol/",
-  "scope": "https://test-biblico.github.io/foodcontrol/",
-  "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#0f1117",
-  "theme_color": "#22c55e",
-  "lang": "es",
-  "icons": [
-    {
-      "src": "https://test-biblico.github.io/foodcontrol/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "https://test-biblico.github.io/foodcontrol/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ]
-};
-
-// Reemplazar manifest link
-const oldLink = document.querySelector('link[rel="manifest"]');
-const newLink = document.createElement('link');
-newLink.rel = 'manifest';
-const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-newLink.href = URL.createObjectURL(manifestBlob);
-if (oldLink) oldLink.remove();
-document.head.appendChild(newLink);
-</script> 
+</script>
 </body>
 </html>
