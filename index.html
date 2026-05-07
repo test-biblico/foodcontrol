@@ -1,17 +1,14 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>FoodControl PRO</title>
-<meta name="description" content="Control de stock, recetas, plan alimentario y compra inteligente">
-<meta name="theme-color" content="#22c55e">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="FoodControl">
-<link rel="manifest" href="https://test-biblico.github.io/foodcontrol/manifest.json">
-<link rel="apple-touch-icon" href="https://test-biblico.github.io/foodcontrol/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
 :root {
   --green: #22c55e;
@@ -399,6 +396,57 @@ select option { background: var(--bg); }
           </div>
           <div style="margin-top:10px">
             <button class="btn btn-green" onclick="guardarOCR()">✅ Guardar en Stock</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- IMPORT ARCHIVO -->
+      <div class="card" style="margin-top:14px">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span> 📂 Importar desde archivo</div>
+        <div class="section-sub" style="margin-bottom:12px">Cargá un Excel (.xlsx), CSV o TXT con tus productos y precios.</div>
+
+        <div class="ocr-area" id="import-area" onclick="document.getElementById('import-file').click()" style="padding:20px">
+          <div class="ocr-icon" id="import-icon">📂</div>
+          <div class="ocr-text" id="import-text">Tocá para seleccionar archivo</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:6px">.xlsx · .csv · .txt</div>
+          <input type="file" accept=".xlsx,.xls,.csv,.txt" id="import-file" style="display:none" onchange="procesarArchivo(event)">
+        </div>
+
+        <!-- Plantilla de referencia -->
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:10px">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">📋 Formato esperado de columnas:</div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;font-size:11px;border-collapse:collapse;color:var(--text2)">
+              <thead>
+                <tr style="background:var(--card2)">
+                  <th style="padding:5px 8px;text-align:left;border-radius:6px 0 0 6px">Producto</th>
+                  <th style="padding:5px 8px;text-align:left">Cantidad</th>
+                  <th style="padding:5px 8px;text-align:left">Unidad</th>
+                  <th style="padding:5px 8px;text-align:left;border-radius:0 6px 6px 0">Precio (Gs)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style="padding:4px 8px;color:var(--text3)">Arroz</td><td style="padding:4px 8px;color:var(--text3)">2</td><td style="padding:4px 8px;color:var(--text3)">kg</td><td style="padding:4px 8px;color:var(--green)">12500</td></tr>
+                <tr><td style="padding:4px 8px;color:var(--text3)">Aceite</td><td style="padding:4px 8px;color:var(--text3)">1</td><td style="padding:4px 8px;color:var(--text3)">litro</td><td style="padding:4px 8px;color:var(--green)">18000</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="descargarPlantilla()" style="margin-top:10px;width:100%">⬇️ Descargar plantilla CSV</button>
+        </div>
+      </div>
+
+      <!-- Resultados del archivo -->
+      <div id="import-resultados" style="display:none;margin-top:14px">
+        <div class="card">
+          <div class="card-title"><span class="dot" style="background:var(--green)"></span> Productos del archivo</div>
+          <div id="import-items" class="item-list"></div>
+          <div style="margin-top:12px">
+            <label class="input-label">Supermercado (opcional)</label>
+            <input id="import-super" placeholder="Ej: Stock, Ñanduti, Shopping...">
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button class="btn btn-green" style="flex:1" onclick="guardarImport()">✅ Guardar en Stock</button>
+            <button class="btn btn-outline btn-sm" onclick="cancelarImport()">✕</button>
           </div>
         </div>
       </div>
@@ -892,35 +940,67 @@ async function procesarOCR(event) {
   if (!file) return;
 
   document.getElementById('ocr-icon').textContent = '⏳';
-  document.getElementById('ocr-text').textContent = 'Procesando imagen...';
+  document.getElementById('ocr-text').textContent = 'Leyendo imagen con OCR...';
   document.getElementById('ocr-text').classList.add('pulsing');
 
   try {
-    const { data: { text } } = await Tesseract.recognize(file, 'spa');
-    const productos = extraerProductosOCR(text);
+    // Step 1: Tesseract OCR - usar español + inglés para mejor cobertura
+    const { data: { text } } = await Tesseract.recognize(file, 'spa+eng', {
+      tessedit_pageseg_mode: '6', // Assume uniform block of text
+    });
+
+    document.getElementById('ocr-text').textContent = 'Interpretando con IA...';
+
+    // Step 2: Claude AI interpreta el texto crudo para extraer productos y precios
+    const productos = await extraerProductosConIA(text);
     ocrDetectados = productos;
-    
-    document.getElementById('ocr-icon').textContent = '✅';
-    document.getElementById('ocr-text').textContent = `${productos.length} productos detectados`;
+
+    document.getElementById('ocr-icon').textContent = productos.length > 0 ? '✅' : '⚠️';
+    document.getElementById('ocr-text').textContent = productos.length > 0
+      ? `${productos.length} productos detectados`
+      : 'No se detectaron productos';
     document.getElementById('ocr-text').classList.remove('pulsing');
 
     const itemsContainer = document.getElementById('ocr-items');
     if (productos.length > 0) {
       itemsContainer.innerHTML = productos.map((p, i) => `
-        <div class="item">
+        <div class="item" style="flex-direction:column;align-items:stretch;gap:6px">
           <div class="item-info">
-            <input value="${p.nombre}" onchange="ocrDetectados[${i}].nombre=this.value" style="background:transparent;border:none;color:var(--text);font-size:14px;font-weight:700;width:100%;padding:0">
-            <div class="grid-2" style="gap:6px;margin-top:4px">
-              <input type="number" value="${p.cantidad}" onchange="ocrDetectados[${i}].cantidad=+this.value" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:12px;color:var(--text)">
-              <input type="number" value="${p.precio}" onchange="ocrDetectados[${i}].precio=+this.value" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:12px;color:var(--text)">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">Producto</div>
+            <input value="${escapeHtml(p.nombre)}" onchange="ocrDetectados[${i}].nombre=this.value"
+              style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-weight:700;width:100%;padding:6px 10px">
+          </div>
+          <div class="grid-2" style="gap:6px">
+            <div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Cantidad</div>
+              <input type="number" value="${p.cantidad}" onchange="ocrDetectados[${i}].cantidad=+this.value"
+                style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--text);width:100%">
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Precio (Gs)</div>
+              <input type="number" value="${p.precio}" onchange="ocrDetectados[${i}].precio=+this.value"
+                style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--green);font-weight:800;width:100%">
             </div>
           </div>
+          <button onclick="ocrDetectados.splice(${i},1);renderOcrItems()"
+            style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--red);border-radius:8px;padding:4px;font-size:12px;cursor:pointer;width:100%">
+            🗑 Eliminar
+          </button>
         </div>`).join('');
     } else {
-      itemsContainer.innerHTML = '<div class="empty"><div class="empty-text">No se pudieron detectar productos. Intentá con mejor iluminación.</div></div>';
+      itemsContainer.innerHTML = `<div class="empty">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">No se pudieron detectar productos.<br>Intentá con mejor iluminación o menor ángulo.</div>
+        <details style="margin-top:12px;font-size:11px;color:var(--text3);cursor:pointer">
+          <summary>Ver texto extraído</summary>
+          <pre style="white-space:pre-wrap;font-size:10px;background:var(--bg);padding:8px;border-radius:8px;margin-top:6px;max-height:120px;overflow:auto">${escapeHtml(text.substring(0, 500))}</pre>
+        </details>
+      </div>`;
     }
     document.getElementById('ocr-resultados').style.display = 'block';
+
   } catch (e) {
+    console.error('OCR Error:', e);
     document.getElementById('ocr-icon').textContent = '❌';
     document.getElementById('ocr-text').textContent = 'Error al procesar imagen';
     document.getElementById('ocr-text').classList.remove('pulsing');
@@ -928,26 +1008,177 @@ async function procesarOCR(event) {
   }
 }
 
-function extraerProductosOCR(text) {
-  const lineas = text.split('\n').filter(l => l.trim().length > 2);
+function renderOcrItems() {
+  // Re-render after delete without re-running OCR
+  const itemsContainer = document.getElementById('ocr-items');
+  if (ocrDetectados.length === 0) {
+    itemsContainer.innerHTML = '<div class="empty"><div class="empty-text">Sin productos</div></div>';
+    return;
+  }
+  itemsContainer.innerHTML = ocrDetectados.map((p, i) => `
+    <div class="item" style="flex-direction:column;align-items:stretch;gap:6px">
+      <div class="item-info">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">Producto</div>
+        <input value="${escapeHtml(p.nombre)}" onchange="ocrDetectados[${i}].nombre=this.value"
+          style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-weight:700;width:100%;padding:6px 10px">
+      </div>
+      <div class="grid-2" style="gap:6px">
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Cantidad</div>
+          <input type="number" value="${p.cantidad}" onchange="ocrDetectados[${i}].cantidad=+this.value"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--text);width:100%">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Precio (Gs)</div>
+          <input type="number" value="${p.precio}" onchange="ocrDetectados[${i}].precio=+this.value"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--green);font-weight:800;width:100%">
+        </div>
+      </div>
+      <button onclick="ocrDetectados.splice(${i},1);renderOcrItems()"
+        style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--red);border-radius:8px;padding:4px;font-size:12px;cursor:pointer;width:100%">
+        🗑 Eliminar
+      </button>
+    </div>`).join('');
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+async function extraerProductosConIA(textoOCR) {
+  // Primero intentar extracción inteligente local (sin IA) como fallback rápido
+  const productosLocal = extraerProductosOCRMejorado(textoOCR);
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Sos un asistente que analiza tickets/facturas de supermercados de Paraguay. 
+El texto fue extraído con OCR y puede tener errores tipográficos, caracteres extraños o líneas mal alineadas.
+Los precios en Paraguay son en Guaraníes (Gs) y suelen ser números grandes sin decimales (ej: 5000, 15900, 123000).
+Los separadores de miles pueden ser puntos (15.900) o el número sin separador (15900).
+Analizá este texto y extraé SOLO los productos comprados con su nombre limpio, cantidad y precio unitario.
+
+REGLAS:
+- Ignorá líneas que sean totales, subtotales, IVA, descuentos, encabezados o pie de página
+- Si hay "x2", "x3", etc. eso es la cantidad
+- El precio que importa es el precio UNITARIO, no el subtotal de línea
+- Limpiá los nombres de productos (quitá códigos de barras, abreviaturas raras)
+- Si no podés determinar el precio con certeza, poné 0
+- Respondé SOLO con JSON válido, sin texto adicional, sin markdown
+
+Formato de respuesta:
+[{"nombre":"Arroz Cañuelas 1kg","cantidad":1,"precio":12500,"unidad":"unid"},...]
+
+Texto del ticket:
+${textoOCR.substring(0, 2000)}`
+        }]
+      })
+    });
+
+    if (!response.ok) throw new Error('API error: ' + response.status);
+    const data = await response.json();
+    const rawText = data.content.map(c => c.text || '').join('');
+    const clean = rawText.replace(/```json|```/gi, '').trim();
+    const parsed = JSON.parse(clean);
+
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed.map(p => ({
+        nombre: String(p.nombre || '').substring(0, 50),
+        cantidad: parseFloat(p.cantidad) || 1,
+        precio: Math.abs(parseInt(p.precio) || 0),
+        unidad: p.unidad || 'unid'
+      })).filter(p => p.nombre.length > 1);
+    }
+  } catch (err) {
+    console.warn('IA fallback a extracción local:', err.message);
+  }
+
+  // Fallback: extracción local mejorada
+  return productosLocal;
+}
+
+// Extracción local mejorada (fallback si falla la API)
+function extraerProductosOCRMejorado(text) {
+  const lineas = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
   const productos = [];
-  lineas.forEach(l => {
-    const precioMatch = l.match(/(\d{1,3}[.,]\d{3})/);
-    const cantMatch = l.match(/(\d+[.,]\d+)/);
-    if (precioMatch) {
-      const precio = parseInt(precioMatch[1].replace(/[.,]/g, ''));
-      const nombre = l.replace(precioMatch[0], '').replace(/[\d.,]/g, '').trim().substring(0, 30);
-      if (nombre.length > 2) {
-        productos.push({
-          nombre: capitalize(nombre),
-          cantidad: cantMatch ? parseFloat(cantMatch[1].replace(',', '.')) : 1,
-          precio: precio,
-          unidad: 'unid'
-        });
+
+  // Palabras que indican que la línea NO es un producto
+  const ignorar = /total|subtotal|iva|descuento|efectivo|cambio|vuelto|ruc|timbrado|factura|ticket|caja|cajero|fecha|hora|gracias|nro|cuil|cuit|\btel\b|\bwww\b|\.com/i;
+
+  lineas.forEach(linea => {
+    if (ignorar.test(linea)) return;
+
+    // Patrones de precio en guaraníes (números grandes, con o sin separador de miles)
+    // Ej: 15.900 | 15,900 | 15900 | 1.500.000 | 150000
+    const patronesPrecio = [
+      /(\d{1,3}(?:[.,]\d{3}){1,3})\s*$/, // 15.900 o 1.500.000 al final
+      /(\d{1,3}(?:[.,]\d{3})+)/,           // 15.900 en cualquier posición
+      /\b(\d{4,7})\b/,                      // número de 4-7 dígitos (1000-9999999 Gs)
+    ];
+
+    let precioStr = null;
+    let precioNum = 0;
+    let matchIndex = -1;
+
+    for (const patron of patronesPrecio) {
+      const m = linea.match(patron);
+      if (m) {
+        precioStr = m[1];
+        matchIndex = m.index;
+        // Normalizar: quitar separadores de miles
+        const normalizado = precioStr.replace(/[.,]/g, '');
+        precioNum = parseInt(normalizado);
+        // Filtrar precios inverosímiles (< 100 Gs o > 50.000.000 Gs)
+        if (precioNum >= 100 && precioNum <= 50000000) break;
+        precioNum = 0;
       }
     }
+
+    if (precioNum === 0) return;
+
+    // Extraer cantidad (ej: "2 x", "x3", "2UN")
+    const cantMatch = linea.match(/^(\d+)\s*[xX*]/);
+    const cantidad = cantMatch ? parseInt(cantMatch[1]) : 1;
+
+    // Limpiar nombre: quitar el precio y números sueltos
+    let nombre = linea;
+    if (precioStr) nombre = nombre.replace(precioStr, '');
+    nombre = nombre
+      .replace(/^\d+\s*[xX*]\s*/, '') // quitar cantidad al inicio
+      .replace(/\b\d{4,}\b/g, '')      // quitar números de 4+ dígitos (códigos, precios)
+      .replace(/[*|#@%\\\/]/g, ' ')    // quitar caracteres especiales
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+      .substring(0, 40);
+
+    if (nombre.length > 2) {
+      productos.push({
+        nombre: capitalize(nombre),
+        cantidad,
+        precio: precioNum,
+        unidad: 'unid'
+      });
+    }
   });
-  return productos.slice(0, 20);
+
+  // Deduplicar por nombre similar
+  const unicos = [];
+  productos.forEach(p => {
+    const existe = unicos.find(u => u.nombre.toLowerCase() === p.nombre.toLowerCase());
+    if (!existe) unicos.push(p);
+  });
+
+  return unicos.slice(0, 30);
 }
 
 function guardarOCR() {
@@ -1428,62 +1659,264 @@ function getEmoji(nombre) {
 }
 
 // ============================
+// IMPORTAR ARCHIVO (Excel/CSV/TXT)
+// ============================
+let importDetectados = [];
+
+async function procesarArchivo(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  document.getElementById('import-icon').textContent = '⏳';
+  document.getElementById('import-text').textContent = 'Leyendo archivo...';
+
+  try {
+    let productos = [];
+
+    if (ext === 'xlsx' || ext === 'xls') {
+      productos = await leerExcel(file);
+    } else if (ext === 'csv') {
+      productos = await leerCSV(file);
+    } else if (ext === 'txt') {
+      productos = await leerTXT(file);
+    } else {
+      throw new Error('Formato no soportado');
+    }
+
+    if (productos.length === 0) throw new Error('No se encontraron datos válidos');
+
+    importDetectados = productos;
+    document.getElementById('import-icon').textContent = '✅';
+    document.getElementById('import-text').textContent = `${productos.length} productos encontrados`;
+    renderImportItems();
+    document.getElementById('import-resultados').style.display = 'block';
+    toast(`✅ ${productos.length} filas leídas`);
+
+  } catch (err) {
+    document.getElementById('import-icon').textContent = '❌';
+    document.getElementById('import-text').textContent = 'Error al leer archivo';
+    toast('Error: ' + err.message, true);
+  }
+
+  // Reset input para permitir subir el mismo archivo de nuevo
+  event.target.value = '';
+}
+
+async function leerExcel(file) {
+  const buffer = await file.arrayBuffer();
+  const wb = XLSX.read(buffer, { type: 'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  return parsearFilas(rows);
+}
+
+async function leerCSV(file) {
+  const text = await file.text();
+  // Detectar separador (coma, punto y coma, tab)
+  const sep = text.includes(';') ? ';' : text.includes('\t') ? '\t' : ',';
+  const rows = text.split('\n').map(l => l.split(sep).map(c => c.trim().replace(/^"|"$/g, '')));
+  return parsearFilas(rows);
+}
+
+async function leerTXT(file) {
+  const text = await file.text();
+  const lineas = text.split('\n').filter(l => l.trim().length > 2);
+  const productos = [];
+
+  lineas.forEach(l => {
+    // Intentar parsear líneas con tab, coma, punto y coma o múltiples espacios
+    const cols = l.split(/\t|;|,|\s{2,}/).map(c => c.trim());
+    if (cols.length >= 2) {
+      // Buscar columna de precio (número grande)
+      let nombre = '', cantidad = 1, precio = 0, unidad = 'unid';
+      cols.forEach(c => {
+        const num = parseFloat(c.replace(/[.,]/g, c.includes('.') && c.split('.')[1]?.length === 3 ? '' : '.'));
+        if (!isNaN(num) && num >= 100) {
+          precio = Math.round(num);
+        } else if (!isNaN(parseFloat(c)) && parseFloat(c) < 100 && parseFloat(c) > 0) {
+          cantidad = parseFloat(c);
+        } else if (c.length > 1 && isNaN(parseFloat(c))) {
+          if (['kg','g','ml','l','litro','unid','mazo'].includes(c.toLowerCase())) {
+            unidad = c.toLowerCase();
+          } else if (!nombre) {
+            nombre = c;
+          }
+        }
+      });
+      if (nombre && precio > 0) {
+        productos.push({ nombre: capitalize(nombre.substring(0, 40)), cantidad, precio, unidad });
+      }
+    }
+  });
+
+  return productos;
+}
+
+function parsearFilas(rows) {
+  if (rows.length === 0) return [];
+
+  const productos = [];
+  // Detectar si la primera fila es encabezado
+  const header = rows[0].map(c => String(c).toLowerCase().trim());
+  const tieneHeader = header.some(h => 
+    ['producto','nombre','item','descripcion','cantidad','precio','price'].some(k => h.includes(k))
+  );
+
+  // Mapear columnas por nombre o por posición
+  let colNombre = -1, colCantidad = -1, colUnidad = -1, colPrecio = -1;
+
+  if (tieneHeader) {
+    header.forEach((h, i) => {
+      if (h.includes('prod') || h.includes('nombre') || h.includes('item') || h.includes('desc')) colNombre = i;
+      else if (h.includes('cant') || h.includes('qty') || h.includes('cantidad')) colCantidad = i;
+      else if (h.includes('unid') || h.includes('unit')) colUnidad = i;
+      else if (h.includes('prec') || h.includes('price') || h.includes('valor') || h.includes('costo') || h.includes('monto')) colPrecio = i;
+    });
+  }
+
+  // Fallback posicional si no hay header reconocible
+  if (colNombre === -1) colNombre = 0;
+  if (colPrecio === -1) {
+    // Buscar la columna con números más grandes (precios en Gs)
+    const startRow = tieneHeader ? 1 : 0;
+    if (rows.length > startRow) {
+      let maxAvg = 0;
+      rows[startRow].forEach((_, ci) => {
+        const vals = rows.slice(startRow).map(r => parseFloat(String(r[ci] || '').replace(/[.,\s]/g, ''))).filter(n => !isNaN(n) && n > 0);
+        const avg = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+        if (avg > maxAvg && ci !== colNombre) { maxAvg = avg; colPrecio = ci; }
+      });
+    }
+  }
+  if (colCantidad === -1 && colPrecio !== colNombre) {
+    // Buscar columna de cantidades pequeñas
+    colCantidad = [1,2,3].find(i => i !== colNombre && i !== colPrecio) ?? -1;
+  }
+
+  const startRow = tieneHeader ? 1 : 0;
+  rows.slice(startRow).forEach(row => {
+    const nombre = String(row[colNombre] || '').trim();
+    if (!nombre || nombre.length < 2) return;
+
+    // Parsear precio: acepta 15.900 o 15900 o "15,900"
+    const rawPrecio = String(row[colPrecio] ?? '');
+    const precioNum = parsearPrecioGs(rawPrecio);
+
+    const rawCant = String(row[colCantidad] ?? '1');
+    const cantidad = parseFloat(rawCant.replace(',', '.')) || 1;
+
+    const unidad = colUnidad >= 0 ? String(row[colUnidad] || 'unid').trim() : 'unid';
+
+    if (nombre.toLowerCase().includes('total') || nombre.toLowerCase().includes('subtotal')) return;
+
+    productos.push({
+      nombre: capitalize(nombre.substring(0, 40)),
+      cantidad,
+      precio: precioNum,
+      unidad: unidad || 'unid'
+    });
+  });
+
+  return productos.filter(p => p.nombre.length > 1).slice(0, 100);
+}
+
+function parsearPrecioGs(str) {
+  // Normaliza precios paraguayos: 15.900 → 15900 / 15,900 → 15900 / 15900 → 15900
+  str = String(str).trim();
+  // Si tiene punto como separador de miles (3 dígitos después del punto)
+  if (/^\d{1,3}(\.\d{3})+$/.test(str)) return parseInt(str.replace(/\./g, ''));
+  // Si tiene coma como separador de miles
+  if (/^\d{1,3}(,\d{3})+$/.test(str)) return parseInt(str.replace(/,/g, ''));
+  // Número puro
+  const n = parseInt(str.replace(/[^0-9]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
+function renderImportItems() {
+  const container = document.getElementById('import-items');
+  if (importDetectados.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-text">Sin productos</div></div>';
+    return;
+  }
+  container.innerHTML = importDetectados.map((p, i) => `
+    <div class="item" style="flex-direction:column;align-items:stretch;gap:6px">
+      <div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:3px">Producto</div>
+        <input value="${escapeHtml(p.nombre)}" onchange="importDetectados[${i}].nombre=this.value"
+          style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-weight:700;width:100%;padding:5px 10px">
+      </div>
+      <div class="grid-3" style="gap:6px">
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:3px">Cantidad</div>
+          <input type="number" value="${p.cantidad}" onchange="importDetectados[${i}].cantidad=+this.value"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:12px;color:var(--text);width:100%">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:3px">Unidad</div>
+          <select onchange="importDetectados[${i}].unidad=this.value"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:5px 6px;font-size:12px;color:var(--text);width:100%">
+            ${['unid','kg','g','litro','ml','mazo'].map(u => `<option value="${u}" ${p.unidad===u?'selected':''}>${u}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:3px">Precio Gs</div>
+          <input type="number" value="${p.precio}" onchange="importDetectados[${i}].precio=+this.value"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:12px;color:var(--green);font-weight:800;width:100%">
+        </div>
+      </div>
+      <button onclick="importDetectados.splice(${i},1);renderImportItems()"
+        style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:var(--red);border-radius:8px;padding:3px;font-size:11px;cursor:pointer">
+        🗑 Eliminar fila
+      </button>
+    </div>`).join('');
+}
+
+function guardarImport() {
+  if (importDetectados.length === 0) { toast('Sin productos para guardar', true); return; }
+  const superNombre = document.getElementById('import-super').value || 'Archivo';
+  let guardados = 0;
+  importDetectados.forEach(p => {
+    if (!p.nombre || p.nombre.length < 2) return;
+    const exist = DB.stock.find(s => s.nombre.toLowerCase() === p.nombre.toLowerCase());
+    if (exist) {
+      exist.cantidad += p.cantidad;
+      if (p.precio > 0) exist.precio = p.precio;
+    } else {
+      DB.stock.push({ nombre: p.nombre, cantidad: p.cantidad, unidad: p.unidad || 'unid', precio: p.precio || 0, usado: 0 });
+    }
+    if (p.precio > 0) {
+      DB.precios.push({ super: superNombre, producto: p.nombre.toLowerCase(), precio: p.precio });
+    }
+    guardados++;
+  });
+  saveDB();
+  toast(`✅ ${guardados} productos guardados en Stock`);
+  cancelarImport();
+}
+
+function cancelarImport() {
+  document.getElementById('import-resultados').style.display = 'none';
+  document.getElementById('import-icon').textContent = '📂';
+  document.getElementById('import-text').textContent = 'Tocá para seleccionar archivo';
+  importDetectados = [];
+}
+
+function descargarPlantilla() {
+  const csv = 'Producto,Cantidad,Unidad,Precio\nArroz Cañuelas 1kg,2,kg,12500\nAceite Natura 900ml,1,litro,18000\nPollo entero,1,kg,25000\nHuevos (docena),1,unid,15000\n';
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'plantilla_productos.csv';
+  a.click(); URL.revokeObjectURL(url);
+  toast('📥 Plantilla descargada');
+}
+
+// ============================
 // INIT
 // ============================
 setGreeting();
 renderDashboard();
-
-// ============================
-// PWA: MANIFEST + ICONS + SW
-// ============================
-(function initPWA() {
-  function makeIcon(size) {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><rect width="${size}" height="${size}" rx="${size*0.22}" fill="#0f1117"/><text x="50%" y="52%" font-size="${size*0.44}" text-anchor="middle" dominant-baseline="central" font-family="Arial,sans-serif">🥗</text><text x="50%" y="84%" font-size="${size*0.13}" text-anchor="middle" dominant-baseline="central" font-family="Arial,sans-serif" fill="#22c55e" font-weight="bold">FOOD</text></svg>`;
-    return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-  }
-  const icon192 = makeIcon(192);
-  const icon512 = makeIcon(512);
-  const appleLink = document.getElementById('apple-icon');
-  if(appleLink) appleLink.href = icon192;
-  const manifest = {
-    name: "FoodControl PRO",
-    short_name: "FoodControl",
-    description: "Control de stock, recetas, plan alimentario y compra inteligente",
-    start_url: "./",
-    scope: "./",
-    display: "standalone",
-    orientation: "portrait",
-    background_color: "#0f1117",
-    theme_color: "#22c55e",
-    lang: "es",
-    id: "foodcontrol-pro",
-    categories: ["food","lifestyle","utilities"],
-    icons: [
-      { src: icon192, sizes: "192x192", type: "image/svg+xml", purpose: "any maskable" },
-      { src: icon512, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
-    ]
-  };
-  const blob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
-  const manifestURL = URL.createObjectURL(blob);
-  const mlink = document.getElementById('pwa-manifest');
-  if(mlink) mlink.href = manifestURL;
-
-  )();
-
-
-// PWA Service Worker inline
-if ('serviceWorker' in navigator) {
-  const sw = `
-self.addEventListener('install', e => self.skipWaiting());
-self.addEventListener('activate', e => self.clients.claim());
-self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
-`;
-  const blob = new Blob([sw], {type:'application/javascript'});
-  navigator.serviceWorker.register('https://test-biblico.github.io/foodcontrol/sw.js', {scope: 'https://test-biblico.github.io/foodcontrol/'}), {scope:'/'})
-    .then(()=>console.log('SW OK'))
-    .catch(e=>console.warn('SW:',e));
-}
-
 </script>
 </body>
 </html>
