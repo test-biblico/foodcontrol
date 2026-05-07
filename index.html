@@ -2,271 +2,1488 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FoodControl PRO AI ULTIMATE</title>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@2/dist/tesseract.min.js"></script>
-
-<!-- PWA MANIFEST -->
-<link rel="manifest" id="manifestPlaceholder">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>FoodControl PRO</title>
+<meta name="description" content="Control de stock, recetas, plan alimentario y compra inteligente">
+<meta name="theme-color" content="#22c55e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FoodControl">
+<link rel="manifest" href="https://test-biblico.github.io/foodcontrol/manifest.json">
+<link rel="apple-touch-icon" href="https://test-biblico.github.io/foodcontrol/icon-192.png">
 <style>
-:root{--green:#22c55e;--bg:#0f1117;--card:#1e2535;--text:#f1f5f9;--border:#2d3748;--red:#ef4444;--yellow:#f59e0b}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:sans-serif}
-#app{max-width:430px;margin:auto;height:100vh;display:flex;flex-direction:column}
-.header{padding:15px;border-bottom:1px solid var(--border)}
-.content{flex:1;overflow:auto;padding:10px 10px 80px}
-.screen{display:none}
-.screen.active{display:block}
-.nav{position:fixed;bottom:0;width:100%;display:flex;overflow-x:auto;background:#111}
-.nav button{flex:1;min-width:70px;border:none;background:none;color:#888;padding:10px}
-.nav button.active{color:var(--green)}
-.card{background:var(--card);padding:10px;margin-bottom:10px;border-radius:10px}
-input{width:100%;padding:8px;margin:4px 0;background:#000;border:1px solid var(--border);color:#fff}
-button{padding:10px;border:none;background:var(--green);color:#000;margin-top:5px}
-.badge{padding:2px 6px;border-radius:6px;font-size:12px}
-.red{background:var(--red)}
-.yellow{background:var(--yellow)}
+:root {
+  --green: #22c55e;
+  --green-dark: #16a34a;
+  --green-light: #bbf7d0;
+  --orange: #f97316;
+  --blue: #3b82f6;
+  --purple: #a855f7;
+  --red: #ef4444;
+  --yellow: #eab308;
+  --bg: #0f1117;
+  --bg2: #161b26;
+  --bg3: #1e2535;
+  --card: #1e2535;
+  --card2: #252d40;
+  --border: #2d3748;
+  --text: #f1f5f9;
+  --text2: #94a3b8;
+  --text3: #64748b;
+  --radius: 16px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+/* ====== APP SHELL ====== */
+#app { display: flex; flex-direction: column; height: 100vh; max-width: 430px; margin: 0 auto; position: relative; background: var(--bg); }
+
+/* ====== HEADER ====== */
+.header { 
+  padding: 20px 20px 12px; 
+  background: linear-gradient(135deg, #0f1117 0%, #1a2236 100%);
+  position: relative;
+  border-bottom: 1px solid var(--border);
+}
+.header-top { display: flex; justify-content: space-between; align-items: center; }
+.app-title { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; }
+.app-title span { color: var(--green); }
+.header-badge { background: var(--green); color: #000; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; letter-spacing: 1px; }
+.greeting { color: var(--text2); font-size: 13px; margin-top: 4px; }
+
+/* ====== NAV BOTTOM ====== */
+.nav-bottom {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-around; align-items: center;
+  padding: 8px 4px 16px;
+  z-index: 100;
+}
+.nav-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 12px; border: none; background: none; cursor: pointer;
+  color: var(--text3); transition: color 0.2s; border-radius: 12px;
+  font-family: 'Nunito', sans-serif;
+}
+.nav-btn.active { color: var(--green); }
+.nav-btn svg { width: 22px; height: 22px; }
+.nav-btn span { font-size: 10px; font-weight: 700; }
+
+/* ====== CONTENT ====== */
+.content { flex: 1; overflow-y: auto; padding: 16px 16px 90px; }
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ====== CARDS ====== */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 14px;
+  box-shadow: var(--shadow);
+}
+.card-title { font-size: 14px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card-title .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+/* ====== STATS ROW ====== */
+.stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.stat-card {
+  background: var(--card2); border-radius: var(--radius); padding: 14px;
+  border: 1px solid var(--border);
+}
+.stat-label { font-size: 11px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-value { font-size: 22px; font-weight: 900; margin-top: 4px; font-family: 'Sora', sans-serif; }
+.stat-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+/* ====== INPUTS ====== */
+.input-group { margin-bottom: 10px; }
+.input-label { font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 6px; display: block; }
+input, select, textarea {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  color: var(--text); padding: 12px 14px; border-radius: 12px;
+  font-family: 'Nunito', sans-serif; font-size: 14px; outline: none;
+  transition: border-color 0.2s;
+}
+input:focus, select:focus { border-color: var(--green); }
+select option { background: var(--bg); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+/* ====== BUTTONS ====== */
+.btn {
+  width: 100%; padding: 13px; border: none; border-radius: 12px;
+  font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800;
+  cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-green { background: var(--green); color: #000; }
+.btn-green:active { background: var(--green-dark); transform: scale(0.98); }
+.btn-orange { background: var(--orange); color: #fff; }
+.btn-blue { background: var(--blue); color: #fff; }
+.btn-purple { background: var(--purple); color: #fff; }
+.btn-outline { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+.btn-sm { padding: 8px 14px; font-size: 12px; width: auto; border-radius: 8px; }
+.btn-red { background: var(--red); color: #fff; }
+
+/* ====== ITEMS LIST ====== */
+.item-list { display: flex; flex-direction: column; gap: 8px; }
+.item {
+  background: var(--card2); border-radius: 12px; padding: 13px 14px;
+  border: 1px solid var(--border); display: flex; align-items: center; gap: 12px;
+}
+.item-icon { 
+  width: 40px; height: 40px; border-radius: 10px; display: flex; 
+  align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+}
+.item-info { flex: 1; }
+.item-name { font-size: 14px; font-weight: 700; }
+.item-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.item-right { text-align: right; }
+.item-value { font-size: 15px; font-weight: 800; font-family: 'Sora', sans-serif; }
+.item-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 6px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+}
+.badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
+.badge-orange { background: rgba(249,115,22,0.15); color: var(--orange); }
+.badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+.badge-blue { background: rgba(59,130,246,0.15); color: var(--blue); }
+.badge-purple { background: rgba(168,85,247,0.15); color: var(--purple); }
+
+/* ====== PROGRESS BAR ====== */
+.progress-bar { height: 6px; background: var(--border); border-radius: 3px; margin-top: 6px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+
+/* ====== SECTION TITLE ====== */
+.section-title { font-size: 18px; font-weight: 900; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.section-sub { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+
+/* ====== TABS ====== */
+.tabs { display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 2px; }
+.tab {
+  padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border);
+  background: var(--card); color: var(--text2); font-size: 13px; font-weight: 700;
+  cursor: pointer; white-space: nowrap; transition: all 0.2s;
+}
+.tab.active { background: var(--green); color: #000; border-color: var(--green); }
+
+/* ====== PLAN DAY CARD ====== */
+.day-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  margin-bottom: 12px; overflow: hidden;
+}
+.day-header {
+  padding: 12px 16px; background: var(--card2); display: flex;
+  justify-content: space-between; align-items: center;
+  cursor: pointer;
+}
+.day-title { font-size: 15px; font-weight: 800; }
+.day-total { font-size: 13px; font-weight: 700; color: var(--green); }
+.day-body { padding: 12px 16px; display: none; }
+.day-body.open { display: block; }
+.meal-item { margin-bottom: 12px; }
+.meal-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text3); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+}
+.meal-label::before { content: ''; display: block; width: 3px; height: 12px; border-radius: 2px; }
+.meal-desayuno .meal-label::before { background: var(--orange); }
+.meal-almuerzo .meal-label::before { background: var(--green); }
+.meal-merienda .meal-label::before { background: var(--purple); }
+.meal-food { font-size: 14px; font-weight: 600; }
+.meal-ingredients { font-size: 12px; color: var(--text3); margin-top: 3px; }
+.meal-cost { font-size: 12px; font-weight: 700; color: var(--green); margin-top: 4px; }
+
+/* ====== TOAST ====== */
+#toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--green); color: #000; padding: 10px 20px; border-radius: 20px;
+  font-size: 13px; font-weight: 700; z-index: 999; opacity: 0;
+  transition: all 0.3s; pointer-events: none; max-width: 300px; text-align: center;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.error { background: var(--red); color: #fff; }
+
+/* ====== MODAL ====== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  z-index: 200; display: none; align-items: flex-end; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--bg2); border-radius: 24px 24px 0 0; padding: 24px;
+  width: 100%; max-width: 430px; max-height: 85vh; overflow-y: auto;
+  border: 1px solid var(--border); border-bottom: none;
+}
+.modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.modal-title { font-size: 18px; font-weight: 900; margin-bottom: 16px; }
+
+/* ====== COMPARAR TABLA ====== */
+.compare-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.compare-table th { padding: 8px; background: var(--card2); color: var(--text2); font-size: 11px; text-transform: uppercase; font-weight: 700; }
+.compare-table td { padding: 8px; border-bottom: 1px solid var(--border); }
+.compare-table .best { color: var(--green); font-weight: 800; }
+
+/* ====== OCR AREA ====== */
+.ocr-area {
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  padding: 32px; text-align: center; margin-bottom: 14px;
+  cursor: pointer; transition: border-color 0.2s;
+}
+.ocr-area:hover { border-color: var(--green); }
+.ocr-icon { font-size: 48px; margin-bottom: 12px; }
+.ocr-text { font-size: 14px; color: var(--text2); }
+#ocr-file { display: none; }
+
+/* ====== CHART CONTAINER ====== */
+.chart-wrap { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; border: 1px solid var(--border); }
+.chart-title { font-size: 14px; font-weight: 700; color: var(--text2); margin-bottom: 12px; }
+
+/* ====== EMPTY STATE ====== */
+.empty { text-align: center; padding: 40px 20px; color: var(--text3); }
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-text { font-size: 14px; }
+
+/* ====== SCROLL ====== */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ====== ANIMATIONS ====== */
+@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.screen.active { animation: slideIn 0.3s ease; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+.pulsing { animation: pulse 1.5s infinite; }
+
+/* ====== DIVIDER ====== */
+.divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+/* ====== CHIP ROW ====== */
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.chip {
+  padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  background: var(--card2); color: var(--text2); transition: all 0.2s;
+}
+.chip.active { background: var(--green); color: #000; border-color: var(--green); }
+
+/* ====== RESULT BOX ====== */
+.result-box {
+  background: linear-gradient(135deg, rgba(34,197,94,0.1), rgba(22,163,74,0.05));
+  border: 1px solid rgba(34,197,94,0.3); border-radius: var(--radius);
+  padding: 16px; margin-bottom: 14px;
+}
+.result-title { font-size: 13px; font-weight: 700; color: var(--green); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+.result-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
+.result-row:last-child { border-bottom: none; font-weight: 800; font-size: 15px; color: var(--green); }
 </style>
 </head>
 <body>
 <div id="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="app-title">Food<span>Control</span></div>
+        <div class="greeting" id="greeting-text">Cargando...</div>
+      </div>
+      <div class="header-badge">PRO</div>
+    </div>
+  </div>
 
-<div class="header">FoodControl PRO AI ULTIMATE</div>
+  <!-- CONTENT -->
+  <div class="content">
 
-<div class="content">
+    <!-- ===== DASHBOARD ===== -->
+    <div class="screen active" id="screen-dashboard">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">📦 Productos</div>
+          <div class="stat-value" id="stat-productos" style="color:var(--green)">0</div>
+          <div class="stat-sub">en stock</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">💰 Invertido</div>
+          <div class="stat-value" id="stat-total" style="color:var(--blue)">0</div>
+          <div class="stat-sub">Gs total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">🍽️ Días plan</div>
+          <div class="stat-value" id="stat-dias" style="color:var(--purple)">0</div>
+          <div class="stat-sub">planificados</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">🏪 Ahorro est.</div>
+          <div class="stat-value" id="stat-ahorro" style="color:var(--orange)">0%</div>
+          <div class="stat-sub">vs precio normal</div>
+        </div>
+      </div>
 
-<div id="dashboard" class="screen active">
-<div class="card">📊 Dashboard IA</div>
-<canvas id="chart"></canvas>
-<div id="alerts"></div>
-<div id="insights"></div>
+      <div class="chart-wrap">
+        <div class="chart-title">📊 Stock disponible por producto</div>
+        <canvas id="chart-stock" height="160"></canvas>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="chart-title">💸 Costo por comida (plan)</div>
+        <canvas id="chart-costos" height="160"></canvas>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--red)"></span> Productos por agotar</div>
+        <div id="lista-alertas" class="item-list">
+          <div class="empty"><div class="empty-text">Sin alertas 🎉</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== STOCK ===== -->
+    <div class="screen" id="screen-stock">
+      <div class="section-title">📦 Control de Stock</div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span> Agregar producto</div>
+        <div class="input-group">
+          <label class="input-label">Producto</label>
+          <input id="s-nombre" placeholder="Ej: Arroz, Pollo, Queso...">
+        </div>
+        <div class="grid-3">
+          <div class="input-group">
+            <label class="input-label">Cantidad</label>
+            <input id="s-cant" type="number" step="0.001" placeholder="0">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Unidad</label>
+            <select id="s-unidad">
+              <option value="kg">kg</option>
+              <option value="g">g</option>
+              <option value="unid">unid</option>
+              <option value="litro">litro</option>
+              <option value="ml">ml</option>
+              <option value="mazo">mazo</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Precio Gs</label>
+            <input id="s-precio" type="number" placeholder="0">
+          </div>
+        </div>
+        <button class="btn btn-green" onclick="agregarStock()">➕ Agregar al Stock</button>
+      </div>
+
+      <div id="lista-stock" class="item-list">
+        <div class="empty"><div class="empty-icon">📦</div><div class="empty-text">Agregá productos a tu stock</div></div>
+      </div>
+    </div>
+
+    <!-- ===== OCR ===== -->
+    <div class="screen" id="screen-ocr">
+      <div class="section-title">📸 Escanear Ticket</div>
+      <div class="section-sub">Sacá foto a tu factura o ticket y cargamos los productos automáticamente.</div>
+
+      <div class="ocr-area" onclick="document.getElementById('ocr-file').click()">
+        <div class="ocr-icon" id="ocr-icon">📷</div>
+        <div class="ocr-text" id="ocr-text">Tocá para seleccionar imagen</div>
+        <input type="file" accept="image/*" id="ocr-file" onchange="procesarOCR(event)">
+      </div>
+
+      <div id="ocr-resultados" style="display:none">
+        <div class="card">
+          <div class="card-title"><span class="dot" style="background:var(--blue)"></span> Productos detectados</div>
+          <div id="ocr-items" class="item-list"></div>
+          <div style="margin-top:12px">
+            <label class="input-label">Supermercado (opcional)</label>
+            <input id="ocr-super" placeholder="Ej: Stock, Ñanduti, Shopping...">
+          </div>
+          <div style="margin-top:10px">
+            <button class="btn btn-green" onclick="guardarOCR()">✅ Guardar en Stock</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="card-title"><span class="dot" style="background:var(--orange)"></span> Carga manual rápida</div>
+        <div class="section-sub" style="margin-bottom:10px">También podés cargar manualmente desde la sección Stock.</div>
+        <button class="btn btn-outline" onclick="showScreen('stock')">Ir a Stock →</button>
+      </div>
+    </div>
+
+    <!-- ===== RECETAS ===== -->
+    <div class="screen" id="screen-recetas">
+      <div class="section-title">🍽️ Mis Recetas</div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--orange)"></span> Nueva receta</div>
+        <div class="input-group">
+          <label class="input-label">Nombre de la comida</label>
+          <input id="r-nombre" placeholder="Ej: Arroz Quesú, Strogonoff...">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Tipo</label>
+          <select id="r-tipo">
+            <option>Desayuno</option>
+            <option>Almuerzo</option>
+            <option>Merienda</option>
+          </select>
+        </div>
+        <div class="divider"></div>
+        <div class="card-title" style="margin-bottom:8px"><span class="dot" style="background:var(--purple)"></span> Ingredientes</div>
+        <div id="r-ingredientes-list" class="item-list" style="margin-bottom:10px"></div>
+        <div class="grid-3" style="margin-bottom:8px">
+          <div class="input-group" style="margin:0">
+            <input id="r-ing-nombre" placeholder="Ingrediente">
+          </div>
+          <div class="input-group" style="margin:0">
+            <input id="r-ing-cant" type="number" step="0.001" placeholder="Cantidad">
+          </div>
+          <div class="input-group" style="margin:0">
+            <select id="r-ing-unidad">
+              <option>g</option>
+              <option>kg</option>
+              <option>ml</option>
+              <option>unid</option>
+              <option>mazo</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="agregarIngrediente()" style="margin-bottom:12px; width:100%">+ Añadir ingrediente</button>
+        <button class="btn btn-green" onclick="guardarReceta()">💾 Guardar Receta</button>
+      </div>
+
+      <div id="lista-recetas" class="item-list">
+        <div class="empty"><div class="empty-icon">🍳</div><div class="empty-text">Aún no tenés recetas guardadas</div></div>
+      </div>
+    </div>
+
+    <!-- ===== PLAN ===== -->
+    <div class="screen" id="screen-plan">
+      <div class="section-title">📅 Planificador IA</div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--purple)"></span> Generar plan automático</div>
+        <div class="grid-2" style="margin-bottom:10px">
+          <div class="input-group">
+            <label class="input-label">Días</label>
+            <select id="plan-dias">
+              <option value="7">7 días</option>
+              <option value="14" selected>14 días</option>
+              <option value="30">30 días</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Presupuesto Gs</label>
+            <input id="plan-presupuesto" type="number" placeholder="Opcional">
+          </div>
+        </div>
+        <button class="btn btn-purple" onclick="generarPlanIA()">🤖 Generar con IA</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span> Agregar día manualmente</div>
+        <div class="grid-2" style="margin-bottom:8px">
+          <div class="input-group">
+            <label class="input-label">Día</label>
+            <input id="p-dia" placeholder="Ej: Día 1">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Tipo</label>
+            <select id="p-tipo">
+              <option>Desayuno</option>
+              <option>Almuerzo</option>
+              <option>Merienda</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Comida / Receta</label>
+          <input id="p-comida" placeholder="Ej: Arroz Quesú, Tallarín...">
+        </div>
+        <button class="btn btn-blue" onclick="agregarAlPlan()">+ Agregar</button>
+      </div>
+
+      <div id="lista-plan"></div>
+    </div>
+
+    <!-- ===== CONSUMO ===== -->
+    <div class="screen" id="screen-consumo">
+      <div class="section-title">🔥 Registrar Consumo</div>
+      <div class="section-sub">Registrá lo que usaste y se descuenta automáticamente del stock.</div>
+
+      <div class="card">
+        <div class="input-group">
+          <label class="input-label">Producto</label>
+          <select id="c-producto">
+            <option value="">-- Seleccionar producto --</option>
+          </select>
+        </div>
+        <div class="grid-2">
+          <div class="input-group">
+            <label class="input-label">Cantidad usada</label>
+            <input id="c-cant" type="number" step="0.001" placeholder="0">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Comida</label>
+            <select id="c-comida">
+              <option>Desayuno</option>
+              <option>Almuerzo</option>
+              <option>Merienda</option>
+              <option>Otro</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-orange" onclick="registrarConsumo()">📉 Descontar del Stock</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--orange)"></span> Historial de hoy</div>
+        <div id="lista-consumo" class="item-list">
+          <div class="empty"><div class="empty-text">Sin registros hoy</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PRECIOS ===== -->
+    <div class="screen" id="screen-precios">
+      <div class="section-title">🏪 Precios por Super</div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span> Cargar precio</div>
+        <div class="grid-2" style="margin-bottom:8px">
+          <div class="input-group">
+            <label class="input-label">Supermercado</label>
+            <input id="sp-super" placeholder="Ej: Stock, Ñanduti...">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Producto</label>
+            <input id="sp-producto" placeholder="Ej: Arroz...">
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Precio (Gs)</label>
+          <input id="sp-precio" type="number" placeholder="0">
+        </div>
+        <button class="btn btn-blue" onclick="agregarPrecio()">+ Agregar precio</button>
+      </div>
+
+      <div id="lista-precios" class="item-list">
+        <div class="empty"><div class="empty-icon">🏪</div><div class="empty-text">Sin precios cargados</div></div>
+      </div>
+    </div>
+
+    <!-- ===== COMPRA INTELIGENTE ===== -->
+    <div class="screen" id="screen-compra">
+      <div class="section-title">🛒 Compra Inteligente</div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span> Mi lista de compras</div>
+        <div class="grid-3" style="margin-bottom:8px">
+          <div class="input-group" style="margin:0">
+            <input id="lc-prod" placeholder="Producto">
+          </div>
+          <div class="input-group" style="margin:0">
+            <input id="lc-cant" type="number" step="0.001" placeholder="Cant.">
+          </div>
+          <div class="input-group" style="margin:0">
+            <select id="lc-unidad">
+              <option>kg</option>
+              <option>unid</option>
+              <option>g</option>
+              <option>litro</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-outline" onclick="agregarListaCompra()" style="margin-bottom:12px">+ Agregar a lista</button>
+        <div id="lista-compra-items" class="item-list" style="margin-bottom:12px">
+          <div class="empty"><div class="empty-text">Lista vacía</div></div>
+        </div>
+        <button class="btn btn-green" onclick="optimizarCompra()">🧠 Optimizar compra con IA</button>
+      </div>
+
+      <div id="resultado-compra" style="display:none">
+        <div class="result-box">
+          <div class="result-title">✅ Plan óptimo de compra</div>
+          <div id="resultado-detalle"></div>
+        </div>
+        <div class="chart-wrap">
+          <div class="chart-title">Comparativa por supermercado</div>
+          <canvas id="chart-compare" height="150"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end content -->
+
+  <!-- NAV BOTTOM -->
+  <div class="nav-bottom">
+    <button class="nav-btn active" onclick="showScreen('dashboard')" id="nav-dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span>Inicio</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('stock')" id="nav-stock">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      <span>Stock</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('recetas')" id="nav-recetas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+      <span>Recetas</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('plan')" id="nav-plan">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Plan</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('compra')" id="nav-compra">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      <span>Compra</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('precios')" id="nav-precios">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      <span>Precios</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('consumo')" id="nav-consumo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 0 0 1 1h3m10-11l2 2m-2-2v10a1 1 0 0 1-1 1h-3m-6 0a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1m-6 0h6"/></svg>
+      <span>Consumo</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('ocr')" id="nav-ocr">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <span>OCR</span>
+    </button>
+  </div>
 </div>
 
-<div id="stock" class="screen">
-<div class="card">
-<input id="sn" placeholder="Producto">
-<input id="sc" type="number" placeholder="Cantidad">
-<input id="sp" type="number" placeholder="Precio">
-<button onclick="addStock()">Agregar</button>
-</div>
-<div id="stockList"></div>
-</div>
-
-<div id="recetas" class="screen">
-<div class="card">
-<input id="rn" placeholder="Receta">
-<input id="ri" placeholder="Ingredientes (coma)">
-<button onclick="addReceta()">Guardar</button>
-</div>
-<div id="recetaList"></div>
-</div>
-
-<div id="plan" class="screen">
-<div class="card"><button onclick="genPlanAI()">Generar Plan IA</button></div>
-<div id="planList"></div>
-</div>
-
-<div id="precios" class="screen">
-<div class="card">
-<input id="ps" placeholder="Supermercado">
-<input id="pp" placeholder="Producto">
-<input id="pr" type="number" placeholder="Precio">
-<button onclick="addPrecio()">Guardar</button>
-</div>
-<div id="precioList"></div>
-</div>
-
-<div id="ocr" class="screen">
-<div class="card">
-<input type="file" onchange="ocr(event)">
-<button onclick="importOCR()">Importar</button>
-<div id="ocrOut"></div>
-</div>
-</div>
-
-</div>
-
-<div class="nav">
-<button onclick="go('dashboard')" id="b-dashboard" class="active">Inicio</button>
-<button onclick="go('stock')" id="b-stock">Stock</button>
-<button onclick="go('recetas')" id="b-recetas">Recetas</button>
-<button onclick="go('plan')" id="b-plan">Plan</button>
-<button onclick="go('precios')" id="b-precios">Precios</button>
-<button onclick="go('ocr')" id="b-ocr">OCR</button>
-</div>
-
-</div>
+<!-- TOAST -->
+<div id="toast"></div>
 
 <script>
+// ============================
+// DATA STORE
+// ============================
+let DB = JSON.parse(localStorage.getItem('foodcontrol_db')) || {
+  stock: [],
+  recetas: [],
+  plan: [],
+  precios: [],
+  listaCompra: [],
+  consumo: []
+};
 
-let DB = JSON.parse(localStorage.getItem('db'))||{
- stock:[],recetas:[],plan:[],precios:[],history:[]
-}
-const save=()=>localStorage.setItem('db',JSON.stringify(DB))
+let ocrDetectados = [];
+let recetaTempIngredientes = [];
+let chartStock = null, chartCostos = null, chartCompare = null;
 
-// MULTI DEVICE SYNC
-const bc = new BroadcastChannel("food_sync")
-bc.onmessage = (e)=>{DB=e.data;renderAll()}
-function sync(){bc.postMessage(DB)}
-
-function go(id){
- document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'))
- document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'))
- document.getElementById(id).classList.add('active')
- document.getElementById('b-'+id).classList.add('active')
- renderAll()
-}
-
-// STOCK
-function addStock(){
- const n=sn.value.trim();const c=+sc.value;const p=+sp.value||0
- if(!n||!c)return
- DB.stock.push({n,c,p,used:0})
- DB.history.push({n,c,date:Date.now()})
- save();sync();renderStock();insights()
+function saveDB() {
+  localStorage.setItem('foodcontrol_db', JSON.stringify(DB));
 }
 
-function usagePerWeek(name){
- const h=DB.history.filter(x=>x.n===name)
- if(!h.length)return 0
- const days=(Date.now()-h[0].date)/86400000
- return h.reduce((a,b)=>a+b.c,0)/(days/7||1)
+// ============================
+// UI NAVIGATION
+// ============================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  document.getElementById('nav-' + id).classList.add('active');
+  
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'stock') renderStock();
+  if (id === 'consumo') renderConsumoSelect();
+  if (id === 'plan') renderPlan();
+  if (id === 'recetas') renderRecetas();
+  if (id === 'precios') renderPrecios();
+  if (id === 'compra') renderListaCompra();
 }
 
-function forecastStock(){
- return DB.stock.map(s=>({
- name:s.n,
- need:Math.max(0,Math.round(usagePerWeek(s.n)*1.2 - s.c))
- }))
+function toast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (isError ? ' error' : '');
+  setTimeout(() => t.className = '', 2500);
 }
 
-function renderStock(){
- stockList.innerHTML=DB.stock.map(x=>`<div class='card'>${x.n} - ${x.c}</div>`).join('')
+// ============================
+// GREETING
+// ============================
+function setGreeting() {
+  const h = new Date().getHours();
+  const g = h < 12 ? 'Buenos días ☀️' : h < 18 ? 'Buenas tardes 🌤️' : 'Buenas noches 🌙';
+  document.getElementById('greeting-text').textContent = g;
 }
 
-// RECETAS + COSTO
-function addReceta(){
- const n=rn.value.trim();const ing=ri.value.split(',').map(i=>i.trim())
- DB.recetas.push({n,ing})
- save();sync();renderRecetas()
-}
-
-function recipeCost(r){
- return r.ing.reduce((t,i)=>{
- const s=DB.stock.find(x=>x.n.toLowerCase()==i.toLowerCase())
- return t+(s?s.p/s.c:0)
- },0)
-}
-
-function renderRecetas(){
- recetaList.innerHTML=DB.recetas.map((r,i)=>{
- const cost=recipeCost(r)
- return `<div class='card'>${r.n} 💰${cost.toFixed(2)} <button onclick='useRecipe(${i})'>Usar</button></div>`
- }).join('')
-}
-
-// CONSUMO
-function useRecipe(i){
- const r=DB.recetas[i]
- r.ing.forEach(ing=>{
- const s=DB.stock.find(x=>x.n.toLowerCase()==ing.toLowerCase())
- if(s){s.c-=1;s.used+=1}
- })
- save();sync();renderAll();insights()
-}
-
-// ALERTAS
-function alerts(){
- return DB.stock.filter(s=>s.c<=2).map(s=>`⚠️ ${s.n}`)
-}
-
-// COMPRAS SUGERIDAS
-function shoppingList(){
- return forecastStock().filter(x=>x.need>0)
-}
-
-// AHORRO
-function savings(){
- let avg=DB.precios.reduce((a,b)=>a+b.prc,0)/(DB.precios.length||1)
- return (avg*DB.stock.length)*0.1
-}
-
-// INSIGHTS IA
-function insights(){
- const el=document.getElementById('insights')
- el.innerHTML=`
- <div class='card'>📦 Comprar: ${shoppingList().map(x=>x.name).join(', ')||'OK'}</div>
- <div class='card'>💰 Ahorro estimado: ${savings().toFixed(2)}</div>
- <div class='card'>📈 Predicción semanal OK</div>
- `
-}
-
-// PLAN IA
-function genPlanAI(){
- DB.plan=DB.recetas.slice().sort((a,b)=>recipeCost(a)-recipeCost(b)).slice(0,5)
- save();sync();renderPlan()
-}
-
-function renderPlan(){
- planList.innerHTML=DB.plan.map(p=>`<div class='card'>${p.n}</div>`).join('')
-}
-
-// PRECIOS
-function addPrecio(){
- DB.precios.push({s:ps.value,p:pp.value,prc:+pr.value})
- save();sync();renderPrecios()
-}
-
-function renderPrecios(){
- precioList.innerHTML=DB.precios.map(x=>`<div class='card'>${x.p} - ${x.prc}</div>`).join('')
-}
-
-function bestPrice(p){
- const f=DB.precios.filter(x=>x.p.toLowerCase()==p.toLowerCase())
- return f.sort((a,b)=>a.prc-b.prc)[0]
-}
-
-// OCR + IMPORT
-async function ocr(e){
- const f=e.target.files[0]
- const {data:{text}}=await Tesseract.recognize(f,'spa')
- ocrOut.innerText=text
- window._ocr=text
-}
-
-function importOCR(){
- if(!window._ocr)return
- window._ocr.split('\n').forEach(l=>{
- const p=l.split(' ')
- if(p.length>=2)DB.stock.push({n:p[0],c:+p[1]||1,p:0,used:0})
- })
- save();sync();renderStock()
-}
-
+// ============================
 // DASHBOARD
-let chart
-function renderChart(){
- const ctx=document.getElementById('chart')
- if(chart)chart.destroy()
- chart=new Chart(ctx,{type:'bar',data:{labels:DB.stock.map(x=>x.n),datasets:[{data:DB.stock.map(x=>x.c)}]}})
+// ============================
+function renderDashboard() {
+  const stock = DB.stock;
+  const total = stock.reduce((s, p) => s + (p.cantidad * p.precio), 0);
+  document.getElementById('stat-productos').textContent = stock.length;
+  document.getElementById('stat-total').textContent = formatGs(total);
+  document.getElementById('stat-dias').textContent = [...new Set(DB.plan.map(p => p.dia))].length;
+
+  // Ahorro estimado (si hay precios cargados)
+  let ahorro = 0;
+  if (DB.precios.length > 0) {
+    const grupos = {};
+    DB.precios.forEach(p => {
+      if (!grupos[p.producto]) grupos[p.producto] = [];
+      grupos[p.producto].push(p.precio);
+    });
+    let maxTotal = 0, minTotal = 0;
+    Object.values(grupos).forEach(arr => {
+      maxTotal += Math.max(...arr);
+      minTotal += Math.min(...arr);
+    });
+    if (maxTotal > 0) ahorro = Math.round(((maxTotal - minTotal) / maxTotal) * 100);
+  }
+  document.getElementById('stat-ahorro').textContent = ahorro + '%';
+
+  // Alertas stock bajo
+  const alertas = stock.filter(p => {
+    const saldo = p.cantidad - p.usado;
+    return saldo / p.cantidad < 0.2 && p.cantidad > 0;
+  });
+  const alertaContainer = document.getElementById('lista-alertas');
+  if (alertas.length === 0) {
+    alertaContainer.innerHTML = '<div class="empty"><div class="empty-text">Sin alertas 🎉</div></div>';
+  } else {
+    alertaContainer.innerHTML = alertas.map(p => {
+      const saldo = p.cantidad - p.usado;
+      return `<div class="item">
+        <div class="item-icon" style="background:rgba(239,68,68,0.15)">⚠️</div>
+        <div class="item-info">
+          <div class="item-name">${p.nombre}</div>
+          <div class="item-sub">Saldo: ${saldo.toFixed(3)} ${p.unidad}</div>
+        </div>
+        <div class="item-right"><span class="item-badge badge-red">Bajo</span></div>
+      </div>`;
+    }).join('');
+  }
+
+  // Gráfico stock
+  const labels = stock.map(p => p.nombre).slice(0, 10);
+  const data = stock.map(p => Math.max(0, p.cantidad - p.usado)).slice(0, 10);
+  if (chartStock) chartStock.destroy();
+  const ctx1 = document.getElementById('chart-stock').getContext('2d');
+  chartStock = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Saldo',
+        data,
+        backgroundColor: 'rgba(34,197,94,0.6)',
+        borderColor: 'rgba(34,197,94,1)',
+        borderWidth: 1,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+      }
+    }
+  });
+
+  // Gráfico costos por plan
+  const planLabels = DB.plan.slice(0, 10).map(p => p.dia + ' ' + p.tipo.substring(0, 3));
+  const planCostos = DB.plan.slice(0, 10).map(p => calcularCostoComida(p.comida));
+  if (chartCostos) chartCostos.destroy();
+  const ctx2 = document.getElementById('chart-costos').getContext('2d');
+  chartCostos = new Chart(ctx2, {
+    type: 'line',
+    data: {
+      labels: planLabels.length > 0 ? planLabels : ['Sin datos'],
+      datasets: [{
+        label: 'Costo Gs',
+        data: planCostos.length > 0 ? planCostos : [0],
+        borderColor: 'rgba(168,85,247,1)',
+        backgroundColor: 'rgba(168,85,247,0.1)',
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: 'rgba(168,85,247,1)',
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+      }
+    }
+  });
 }
 
-function renderAll(){
- renderStock();renderRecetas();renderPlan();renderPrecios();renderChart();insights()
+// ============================
+// STOCK
+// ============================
+function agregarStock() {
+  const nombre = document.getElementById('s-nombre').value.trim();
+  const cant = parseFloat(document.getElementById('s-cant').value);
+  const unidad = document.getElementById('s-unidad').value;
+  const precio = parseFloat(document.getElementById('s-precio').value) || 0;
+
+  if (!nombre || isNaN(cant) || cant <= 0) { toast('Completá nombre y cantidad', true); return; }
+
+  // Check if exists
+  const exist = DB.stock.find(p => p.nombre.toLowerCase() === nombre.toLowerCase());
+  if (exist) {
+    exist.cantidad += cant;
+    exist.precio = precio || exist.precio;
+    toast(`✅ Stock actualizado: +${cant} ${unidad}`);
+  } else {
+    DB.stock.push({ nombre, cantidad: cant, unidad, precio, usado: 0 });
+    toast('✅ Producto agregado');
+  }
+
+  saveDB();
+  document.getElementById('s-nombre').value = '';
+  document.getElementById('s-cant').value = '';
+  document.getElementById('s-precio').value = '';
+  renderStock();
 }
 
-// PWA OFFLINE
-if('serviceWorker' in navigator){
- const sw = `self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)))})`
- const blob=new Blob([sw],{type:'text/javascript'})
- navigator.serviceWorker.register(URL.createObjectURL(blob))
+function renderStock() {
+  const container = document.getElementById('lista-stock');
+  if (DB.stock.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📦</div><div class="empty-text">Agregá productos a tu stock</div></div>';
+    return;
+  }
+  container.innerHTML = DB.stock.map((p, i) => {
+    const saldo = p.cantidad - p.usado;
+    const pct = Math.max(0, Math.min(100, (saldo / p.cantidad) * 100));
+    const color = pct > 50 ? 'var(--green)' : pct > 20 ? 'var(--orange)' : 'var(--red)';
+    const badge = pct > 50 ? 'badge-green' : pct > 20 ? 'badge-orange' : 'badge-red';
+    const label = pct > 50 ? 'OK' : pct > 20 ? 'BAJO' : 'CRÍTICO';
+    const total = (p.cantidad * p.precio).toFixed(0);
+    return `<div class="item">
+      <div class="item-icon" style="background:${color}22; font-size:20px">
+        ${getEmoji(p.nombre)}
+      </div>
+      <div class="item-info" style="flex:1">
+        <div class="item-name">${p.nombre}</div>
+        <div class="item-sub">Saldo: <strong>${saldo.toFixed(3)}</strong> ${p.unidad} | Gs ${formatGs(p.precio)}/u</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%; background:${color}"></div></div>
+      </div>
+      <div class="item-right" style="margin-left:8px">
+        <span class="item-badge ${badge}">${label}</span>
+        <div style="font-size:11px; color:var(--text3); margin-top:4px">Gs ${formatGs(total)}</div>
+        <button onclick="eliminarStock(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;margin-top:4px">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
+function eliminarStock(i) {
+  DB.stock.splice(i, 1);
+  saveDB();
+  renderStock();
+  toast('Producto eliminado');
+}
+
+// ============================
+// OCR
+// ============================
+async function procesarOCR(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  document.getElementById('ocr-icon').textContent = '⏳';
+  document.getElementById('ocr-text').textContent = 'Procesando imagen...';
+  document.getElementById('ocr-text').classList.add('pulsing');
+
+  try {
+    const { data: { text } } = await Tesseract.recognize(file, 'spa');
+    const productos = extraerProductosOCR(text);
+    ocrDetectados = productos;
+    
+    document.getElementById('ocr-icon').textContent = '✅';
+    document.getElementById('ocr-text').textContent = `${productos.length} productos detectados`;
+    document.getElementById('ocr-text').classList.remove('pulsing');
+
+    const itemsContainer = document.getElementById('ocr-items');
+    if (productos.length > 0) {
+      itemsContainer.innerHTML = productos.map((p, i) => `
+        <div class="item">
+          <div class="item-info">
+            <input value="${p.nombre}" onchange="ocrDetectados[${i}].nombre=this.value" style="background:transparent;border:none;color:var(--text);font-size:14px;font-weight:700;width:100%;padding:0">
+            <div class="grid-2" style="gap:6px;margin-top:4px">
+              <input type="number" value="${p.cantidad}" onchange="ocrDetectados[${i}].cantidad=+this.value" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:12px;color:var(--text)">
+              <input type="number" value="${p.precio}" onchange="ocrDetectados[${i}].precio=+this.value" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:12px;color:var(--text)">
+            </div>
+          </div>
+        </div>`).join('');
+    } else {
+      itemsContainer.innerHTML = '<div class="empty"><div class="empty-text">No se pudieron detectar productos. Intentá con mejor iluminación.</div></div>';
+    }
+    document.getElementById('ocr-resultados').style.display = 'block';
+  } catch (e) {
+    document.getElementById('ocr-icon').textContent = '❌';
+    document.getElementById('ocr-text').textContent = 'Error al procesar imagen';
+    document.getElementById('ocr-text').classList.remove('pulsing');
+    toast('Error en OCR. Intentá con otra imagen.', true);
+  }
+}
+
+function extraerProductosOCR(text) {
+  const lineas = text.split('\n').filter(l => l.trim().length > 2);
+  const productos = [];
+  lineas.forEach(l => {
+    const precioMatch = l.match(/(\d{1,3}[.,]\d{3})/);
+    const cantMatch = l.match(/(\d+[.,]\d+)/);
+    if (precioMatch) {
+      const precio = parseInt(precioMatch[1].replace(/[.,]/g, ''));
+      const nombre = l.replace(precioMatch[0], '').replace(/[\d.,]/g, '').trim().substring(0, 30);
+      if (nombre.length > 2) {
+        productos.push({
+          nombre: capitalize(nombre),
+          cantidad: cantMatch ? parseFloat(cantMatch[1].replace(',', '.')) : 1,
+          precio: precio,
+          unidad: 'unid'
+        });
+      }
+    }
+  });
+  return productos.slice(0, 20);
+}
+
+function guardarOCR() {
+  if (ocrDetectados.length === 0) { toast('Sin productos para guardar', true); return; }
+  const superNombre = document.getElementById('ocr-super').value || 'OCR';
+  ocrDetectados.forEach(p => {
+    const exist = DB.stock.find(s => s.nombre.toLowerCase() === p.nombre.toLowerCase());
+    if (exist) {
+      exist.cantidad += p.cantidad;
+    } else {
+      DB.stock.push({ nombre: p.nombre, cantidad: p.cantidad, unidad: p.unidad || 'unid', precio: p.precio, usado: 0 });
+    }
+    if (p.precio > 0) {
+      DB.precios.push({ super: superNombre, producto: p.nombre.toLowerCase(), precio: p.precio });
+    }
+  });
+  saveDB();
+  toast(`✅ ${ocrDetectados.length} productos guardados`);
+  document.getElementById('ocr-resultados').style.display = 'none';
+  document.getElementById('ocr-icon').textContent = '📷';
+  document.getElementById('ocr-text').textContent = 'Tocá para seleccionar imagen';
+  ocrDetectados = [];
+}
+
+// ============================
+// RECETAS
+// ============================
+function agregarIngrediente() {
+  const nombre = document.getElementById('r-ing-nombre').value.trim();
+  const cant = parseFloat(document.getElementById('r-ing-cant').value);
+  const unidad = document.getElementById('r-ing-unidad').value;
+  if (!nombre || isNaN(cant)) { toast('Completá ingrediente y cantidad', true); return; }
+  recetaTempIngredientes.push({ nombre, cantidad: cant, unidad });
+  document.getElementById('r-ing-nombre').value = '';
+  document.getElementById('r-ing-cant').value = '';
+  renderIngredientesTemp();
+}
+
+function renderIngredientesTemp() {
+  document.getElementById('r-ingredientes-list').innerHTML = recetaTempIngredientes.map((ing, i) =>
+    `<div class="item">
+      <div class="item-icon" style="background:rgba(168,85,247,0.15)">${getEmoji(ing.nombre)}</div>
+      <div class="item-info"><div class="item-name">${ing.nombre}</div><div class="item-sub">${ing.cantidad} ${ing.unidad}</div></div>
+      <button onclick="recetaTempIngredientes.splice(${i},1);renderIngredientesTemp()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:18px">×</button>
+    </div>`).join('');
+}
+
+function guardarReceta() {
+  const nombre = document.getElementById('r-nombre').value.trim();
+  const tipo = document.getElementById('r-tipo').value;
+  if (!nombre) { toast('Poné un nombre a la receta', true); return; }
+  if (recetaTempIngredientes.length === 0) { toast('Agregá al menos un ingrediente', true); return; }
+
+  DB.recetas.push({ nombre, tipo, ingredientes: [...recetaTempIngredientes] });
+  saveDB();
+  recetaTempIngredientes = [];
+  document.getElementById('r-nombre').value = '';
+  document.getElementById('r-ingredientes-list').innerHTML = '';
+  renderRecetas();
+  toast(`✅ Receta "${nombre}" guardada`);
+}
+
+function renderRecetas() {
+  const container = document.getElementById('lista-recetas');
+  if (DB.recetas.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">🍳</div><div class="empty-text">Aún no tenés recetas guardadas</div></div>';
+    return;
+  }
+  container.innerHTML = DB.recetas.map((r, i) => {
+    const costo = calcularCostoReceta(r);
+    const tipoColor = { Desayuno: 'badge-orange', Almuerzo: 'badge-green', Merienda: 'badge-purple' };
+    return `<div class="item">
+      <div class="item-icon" style="background:rgba(34,197,94,0.15)">🍽️</div>
+      <div class="item-info">
+        <div class="item-name">${r.nombre}</div>
+        <div class="item-sub">${r.ingredientes.length} ingredientes</div>
+        ${r.ingredientes.slice(0,3).map(ing => `<span style="font-size:11px;color:var(--text3)">${ing.nombre} ${ing.cantidad}${ing.unidad} </span>`).join('')}
+      </div>
+      <div class="item-right">
+        <span class="item-badge ${tipoColor[r.tipo] || 'badge-blue'}">${r.tipo}</span>
+        <div class="item-value" style="color:var(--green);font-size:13px;margin-top:4px">Gs ${formatGs(costo)}</div>
+        <button onclick="eliminarReceta(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;margin-top:4px">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function eliminarReceta(i) {
+  DB.recetas.splice(i, 1);
+  saveDB();
+  renderRecetas();
+}
+
+function calcularCostoReceta(r) {
+  return r.ingredientes.reduce((total, ing) => {
+    const prod = DB.stock.find(p => p.nombre.toLowerCase().includes(ing.nombre.toLowerCase()) || ing.nombre.toLowerCase().includes(p.nombre.toLowerCase()));
+    return total + (prod ? prod.precio * ing.cantidad : 0);
+  }, 0);
+}
+
+function calcularCostoComida(nombreComida) {
+  const receta = DB.recetas.find(r => r.nombre.toLowerCase().includes(nombreComida.toLowerCase()) || nombreComida.toLowerCase().includes(r.nombre.toLowerCase()));
+  return receta ? calcularCostoReceta(receta) : 0;
+}
+
+// ============================
+// PLAN IA
+// ============================
+const comidasBase = [
+  { nombre: 'Café con leche', tipo: 'Desayuno', ingredientes: [{nombre:'Leche', cantidad:200, unidad:'ml'}] },
+  { nombre: 'Mbeju', tipo: 'Desayuno', ingredientes: [{nombre:'Almidón', cantidad:0.03, unidad:'kg'},{nombre:'Queso Paraguay', cantidad:0.02, unidad:'kg'}] },
+  { nombre: 'Mixto de queso', tipo: 'Desayuno', ingredientes: [{nombre:'Queso Paraguay', cantidad:0.025, unidad:'kg'}] },
+  { nombre: 'Cocido con leche', tipo: 'Merienda', ingredientes: [{nombre:'Leche', cantidad:200, unidad:'ml'}] },
+  { nombre: 'Arroz quesú', tipo: 'Almuerzo', ingredientes: [{nombre:'Arrocillo', cantidad:0.1, unidad:'kg'},{nombre:'Queso ricota', cantidad:0.04, unidad:'kg'}] },
+  { nombre: 'Tallarín con salsa', tipo: 'Almuerzo', ingredientes: [{nombre:'Fideos tallarín', cantidad:0.09, unidad:'kg'},{nombre:'Tomate liza', cantidad:0.1, unidad:'kg'},{nombre:'Cebolla', cantidad:0.05, unidad:'kg'}] },
+  { nombre: 'Bife con huevo y arroz', tipo: 'Almuerzo', ingredientes: [{nombre:'Carnaza de segunda', cantidad:0.12, unidad:'kg'},{nombre:'Huevos Nutrinuevos', cantidad:2, unidad:'unid'},{nombre:'Arrocillo', cantidad:0.08, unidad:'kg'}] },
+  { nombre: 'Pollo grille con repollo', tipo: 'Almuerzo', ingredientes: [{nombre:'Filet pechuga fresca pechugón', cantidad:0.15, unidad:'kg'},{nombre:'Repollo blanco', cantidad:0.1, unidad:'kg'},{nombre:'Mandioca', cantidad:0.2, unidad:'kg'}] },
+  { nombre: 'Picadito de carne con tortilla', tipo: 'Almuerzo', ingredientes: [{nombre:'Carnaza de segunda', cantidad:0.12, unidad:'kg'},{nombre:'Papa negra', cantidad:0.15, unidad:'kg'},{nombre:'Huevos Nutrinuevos', cantidad:1, unidad:'unid'}] },
+  { nombre: 'Strogonoff de pollo', tipo: 'Almuerzo', ingredientes: [{nombre:'Filet pechuga fresca pechugón', cantidad:0.15, unidad:'kg'},{nombre:'Crema de leche 200g', cantidad:0.05, unidad:'kg'},{nombre:'Arrocillo', cantidad:0.08, unidad:'kg'}] },
+  { nombre: 'Caldo de arroz con queso', tipo: 'Almuerzo', ingredientes: [{nombre:'Arrocillo', cantidad:0.08, unidad:'kg'},{nombre:'Queso Paraguay', cantidad:0.03, unidad:'kg'},{nombre:'Arvejas', cantidad:0.04, unidad:'kg'}] },
+  { nombre: 'Marinera con ensalada de poroto', tipo: 'Almuerzo', ingredientes: [{nombre:'Carnaza de segunda', cantidad:0.12, unidad:'kg'},{nombre:'Poroto San Francisco', cantidad:0.08, unidad:'kg'},{nombre:'Harina maestra', cantidad:0.03, unidad:'kg'}] },
+];
+
+function generarPlanIA() {
+  const dias = parseInt(document.getElementById('plan-dias').value);
+  const presupuesto = parseFloat(document.getElementById('plan-presupuesto').value) || Infinity;
+
+  DB.plan = [];
+  const almuerzos = comidasBase.filter(c => c.tipo === 'Almuerzo');
+  const desayunos = comidasBase.filter(c => c.tipo === 'Desayuno');
+  const meriendas = comidasBase.filter(c => c.tipo === 'Merienda');
+
+  let gastoTotal = 0;
+
+  for (let i = 1; i <= dias; i++) {
+    const dia = 'Día ' + i;
+    const desayuno = desayunos[i % desayunos.length];
+    const almuerzo = almuerzos[i % almuerzos.length];
+    const merienda = meriendas[i % meriendas.length];
+
+    const costoAlmuerzo = calcularCostoRecetaRapida(almuerzo);
+    gastoTotal += costoAlmuerzo;
+
+    if (gastoTotal > presupuesto) break;
+
+    DB.plan.push({ dia, tipo: 'Desayuno', comida: desayuno.nombre, ingredientes: desayuno.ingredientes });
+    DB.plan.push({ dia, tipo: 'Almuerzo', comida: almuerzo.nombre, ingredientes: almuerzo.ingredientes });
+    DB.plan.push({ dia, tipo: 'Merienda', comida: merienda.nombre, ingredientes: merienda.ingredientes });
+  }
+
+  saveDB();
+  renderPlan();
+  toast(`✅ Plan de ${dias} días generado`);
+}
+
+function calcularCostoRecetaRapida(receta) {
+  if (!receta.ingredientes) return 0;
+  return receta.ingredientes.reduce((t, ing) => {
+    const p = DB.stock.find(s => s.nombre.toLowerCase().includes(ing.nombre.toLowerCase()) || ing.nombre.toLowerCase().includes(s.nombre.toLowerCase()));
+    return t + (p ? p.precio * ing.cantidad : 500);
+  }, 0);
+}
+
+function agregarAlPlan() {
+  const dia = document.getElementById('p-dia').value.trim();
+  const tipo = document.getElementById('p-tipo').value;
+  const comida = document.getElementById('p-comida').value.trim();
+  if (!dia || !comida) { toast('Completá todos los campos', true); return; }
+  DB.plan.push({ dia, tipo, comida });
+  saveDB();
+  renderPlan();
+  document.getElementById('p-dia').value = '';
+  document.getElementById('p-comida').value = '';
+  toast('✅ Agregado al plan');
+}
+
+function renderPlan() {
+  const container = document.getElementById('lista-plan');
+  if (DB.plan.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No hay plan. Generá con IA o agregá manualmente.</div></div>';
+    return;
+  }
+
+  const dias = [...new Set(DB.plan.map(p => p.dia))];
+  container.innerHTML = dias.map(dia => {
+    const items = DB.plan.filter(p => p.dia === dia);
+    const costoTotal = items.reduce((t, p) => t + calcularCostoComida(p.comida), 0);
+    const tipos = { Desayuno: null, Almuerzo: null, Merienda: null };
+    items.forEach(p => tipos[p.tipo] = p);
+
+    return `<div class="day-card">
+      <div class="day-header" onclick="toggleDay('${dia}')">
+        <div class="day-title">📅 ${dia}</div>
+        <div class="day-total">Gs ${formatGs(costoTotal)}</div>
+      </div>
+      <div class="day-body" id="day-${dia.replace(' ', '')}">
+        ${tipos.Desayuno ? `<div class="meal-item meal-desayuno">
+          <div class="meal-label">☀️ Desayuno</div>
+          <div class="meal-food">${tipos.Desayuno.comida}</div>
+          <div class="meal-cost">Gs ${formatGs(calcularCostoComida(tipos.Desayuno.comida))}</div>
+        </div>` : ''}
+        ${tipos.Almuerzo ? `<div class="meal-item meal-almuerzo">
+          <div class="meal-label">🌞 Almuerzo</div>
+          <div class="meal-food">${tipos.Almuerzo.comida}</div>
+          ${tipos.Almuerzo.ingredientes ? `<div class="meal-ingredients">${tipos.Almuerzo.ingredientes.map(i => `${i.nombre} ${i.cantidad}${i.unidad}`).join(' · ')}</div>` : ''}
+          <div class="meal-cost">Gs ${formatGs(calcularCostoComida(tipos.Almuerzo.comida))}</div>
+        </div>` : ''}
+        ${tipos.Merienda ? `<div class="meal-item meal-merienda">
+          <div class="meal-label">🌆 Merienda</div>
+          <div class="meal-food">${tipos.Merienda.comida}</div>
+          <div class="meal-cost">Gs ${formatGs(calcularCostoComida(tipos.Merienda.comida))}</div>
+        </div>` : ''}
+        <button onclick="eliminarDia('${dia}')" class="btn btn-outline btn-sm" style="margin-top:8px;color:var(--red)">🗑 Eliminar día</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleDay(dia) {
+  const el = document.getElementById('day-' + dia.replace(' ', ''));
+  el.classList.toggle('open');
+}
+
+function eliminarDia(dia) {
+  DB.plan = DB.plan.filter(p => p.dia !== dia);
+  saveDB();
+  renderPlan();
+}
+
+// ============================
+// CONSUMO
+// ============================
+function renderConsumoSelect() {
+  const sel = document.getElementById('c-producto');
+  sel.innerHTML = '<option value="">-- Seleccionar producto --</option>' +
+    DB.stock.map(p => `<option value="${p.nombre}">${p.nombre} (${(p.cantidad - p.usado).toFixed(3)} ${p.unidad})</option>`).join('');
+  renderConsumo();
+}
+
+function registrarConsumo() {
+  const producto = document.getElementById('c-producto').value;
+  const cant = parseFloat(document.getElementById('c-cant').value);
+  const comida = document.getElementById('c-comida').value;
+  if (!producto || isNaN(cant) || cant <= 0) { toast('Seleccioná producto y cantidad', true); return; }
+
+  const prod = DB.stock.find(p => p.nombre === producto);
+  if (!prod) { toast('Producto no encontrado', true); return; }
+
+  const saldoActual = prod.cantidad - prod.usado;
+  if (cant > saldoActual) {
+    // Reajuste automático
+    prod.usado = prod.cantidad;
+    toast(`⚠️ Ajustado al máximo disponible (${saldoActual.toFixed(3)} ${prod.unidad})`);
+  } else {
+    prod.usado += cant;
+  }
+
+  const fecha = new Date().toLocaleDateString('es-PY');
+  DB.consumo.push({ fecha, producto, cantidad: cant, unidad: prod.unidad, comida });
+  saveDB();
+  renderConsumoSelect();
+  document.getElementById('c-cant').value = '';
+  toast(`✅ Descontado: ${cant} ${prod.unidad} de ${producto}`);
+}
+
+function renderConsumo() {
+  const hoy = new Date().toLocaleDateString('es-PY');
+  const items = DB.consumo.filter(c => c.fecha === hoy);
+  const container = document.getElementById('lista-consumo');
+  if (items.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-text">Sin registros hoy</div></div>';
+    return;
+  }
+  container.innerHTML = items.reverse().map(c => {
+    const tipoColor = { Desayuno: 'badge-orange', Almuerzo: 'badge-green', Merienda: 'badge-purple', Otro: 'badge-blue' };
+    return `<div class="item">
+      <div class="item-icon" style="background:rgba(249,115,22,0.15)">${getEmoji(c.producto)}</div>
+      <div class="item-info">
+        <div class="item-name">${c.producto}</div>
+        <div class="item-sub">${c.cantidad} ${c.unidad}</div>
+      </div>
+      <span class="item-badge ${tipoColor[c.comida] || 'badge-blue'}">${c.comida}</span>
+    </div>`;
+  }).join('');
+}
+
+// ============================
+// PRECIOS
+// ============================
+function agregarPrecio() {
+  const sup = document.getElementById('sp-super').value.trim();
+  const prod = document.getElementById('sp-producto').value.trim();
+  const precio = parseFloat(document.getElementById('sp-precio').value);
+  if (!sup || !prod || isNaN(precio)) { toast('Completá todos los campos', true); return; }
+  DB.precios.push({ super: sup, producto: prod.toLowerCase(), precio });
+  saveDB();
+  document.getElementById('sp-super').value = '';
+  document.getElementById('sp-producto').value = '';
+  document.getElementById('sp-precio').value = '';
+  renderPrecios();
+  toast('✅ Precio guardado');
+}
+
+function renderPrecios() {
+  const container = document.getElementById('lista-precios');
+  if (DB.precios.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">🏪</div><div class="empty-text">Sin precios cargados</div></div>';
+    return;
+  }
+
+  // Group by product
+  const grupos = {};
+  DB.precios.forEach(p => {
+    if (!grupos[p.producto]) grupos[p.producto] = [];
+    grupos[p.producto].push(p);
+  });
+
+  container.innerHTML = Object.entries(grupos).map(([prod, precios]) => {
+    const minPrecio = Math.min(...precios.map(p => p.precio));
+    return `<div class="item">
+      <div class="item-icon" style="background:rgba(59,130,246,0.15)">${getEmoji(prod)}</div>
+      <div class="item-info">
+        <div class="item-name">${capitalize(prod)}</div>
+        <div class="item-sub">${precios.map(p => `${p.super}: Gs ${formatGs(p.precio)}`).join(' · ')}</div>
+      </div>
+      <div class="item-right">
+        <div class="item-value" style="color:var(--green);font-size:13px">Min: Gs ${formatGs(minPrecio)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================
+// LISTA DE COMPRA + OPTIMIZADOR
+// ============================
+function agregarListaCompra() {
+  const prod = document.getElementById('lc-prod').value.trim();
+  const cant = parseFloat(document.getElementById('lc-cant').value);
+  const unidad = document.getElementById('lc-unidad').value;
+  if (!prod || isNaN(cant)) { toast('Completá producto y cantidad', true); return; }
+  DB.listaCompra.push({ producto: prod.toLowerCase(), cantidad: cant, unidad });
+  saveDB();
+  document.getElementById('lc-prod').value = '';
+  document.getElementById('lc-cant').value = '';
+  renderListaCompra();
+  toast('✅ Agregado a la lista');
+}
+
+function renderListaCompra() {
+  const container = document.getElementById('lista-compra-items');
+  if (DB.listaCompra.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-text">Lista vacía</div></div>';
+    return;
+  }
+  container.innerHTML = DB.listaCompra.map((item, i) => `
+    <div class="item">
+      <div class="item-icon" style="background:rgba(34,197,94,0.15)">${getEmoji(item.producto)}</div>
+      <div class="item-info">
+        <div class="item-name">${capitalize(item.producto)}</div>
+        <div class="item-sub">${item.cantidad} ${item.unidad}</div>
+      </div>
+      <button onclick="DB.listaCompra.splice(${i},1);saveDB();renderListaCompra()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:18px">×</button>
+    </div>`).join('');
+}
+
+function optimizarCompra() {
+  if (DB.listaCompra.length === 0) { toast('Agregá productos a la lista', true); return; }
+
+  const resultadoDiv = document.getElementById('resultado-compra');
+  const detalleDiv = document.getElementById('resultado-detalle');
+  
+  let totalOptimo = 0;
+  let rows = '';
+  const porSuper = {};
+
+  DB.listaCompra.forEach(item => {
+    const opciones = DB.precios.filter(p => 
+      p.producto.includes(item.producto) || item.producto.includes(p.producto)
+    );
+
+    if (opciones.length === 0) {
+      rows += `<div class="result-row"><span>${capitalize(item.producto)}</span><span style="color:var(--text3)">Sin datos de precio</span></div>`;
+      return;
+    }
+
+    const mejor = opciones.reduce((a, b) => a.precio < b.precio ? a : b);
+    const costo = mejor.precio * item.cantidad;
+    totalOptimo += costo;
+
+    rows += `<div class="result-row">
+      <span>${capitalize(item.producto)} (${item.cantidad} ${item.unidad})</span>
+      <span>${mejor.super} · Gs ${formatGs(costo)}</span>
+    </div>`;
+
+    if (!porSuper[mejor.super]) porSuper[mejor.super] = 0;
+    porSuper[mejor.super] += costo;
+  });
+
+  rows += `<div class="result-row"><span>💰 TOTAL ÓPTIMO</span><span>Gs ${formatGs(totalOptimo)}</span></div>`;
+  detalleDiv.innerHTML = rows;
+  resultadoDiv.style.display = 'block';
+
+  // Comparación por super
+  const todosSupers = [...new Set(DB.precios.map(p => p.super))];
+  const totalesPorSuper = {};
+  todosSupers.forEach(sup => {
+    let total = 0;
+    DB.listaCompra.forEach(item => {
+      const precio = DB.precios.find(p => p.super === sup && (p.producto.includes(item.producto) || item.producto.includes(p.producto)));
+      if (precio) total += precio.precio * item.cantidad;
+    });
+    if (total > 0) totalesPorSuper[sup] = total;
+  });
+
+  if (Object.keys(totalesPorSuper).length > 0) {
+    if (chartCompare) chartCompare.destroy();
+    const ctx = document.getElementById('chart-compare').getContext('2d');
+    chartCompare = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(totalesPorSuper),
+        datasets: [{
+          data: Object.values(totalesPorSuper),
+          backgroundColor: Object.keys(totalesPorSuper).map((_, i) => 
+            ['rgba(34,197,94,0.7)', 'rgba(59,130,246,0.7)', 'rgba(249,115,22,0.7)', 'rgba(168,85,247,0.7)'][i % 4]
+          ),
+          borderRadius: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+        }
+      }
+    });
+  }
+
+  toast('✅ Compra optimizada');
+}
+
+// ============================
+// UTILS
+// ============================
+function formatGs(n) {
+  return new Intl.NumberFormat('es-PY').format(Math.round(n));
+}
+
+function capitalize(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function getEmoji(nombre) {
+  const n = nombre.toLowerCase();
+  if (n.includes('pollo') || n.includes('pechuga')) return '🍗';
+  if (n.includes('carne') || n.includes('bife') || n.includes('carnaza')) return '🥩';
+  if (n.includes('arroz') || n.includes('arrocillo')) return '🍚';
+  if (n.includes('fideos') || n.includes('tallarín')) return '🍝';
+  if (n.includes('queso')) return '🧀';
+  if (n.includes('huevo')) return '🥚';
+  if (n.includes('papa')) return '🥔';
+  if (n.includes('tomate')) return '🍅';
+  if (n.includes('mandioca')) return '🌿';
+  if (n.includes('aceite')) return '🫙';
+  if (n.includes('leche')) return '🥛';
+  if (n.includes('cebolla')) return '🧅';
+  if (n.includes('harina') || n.includes('almidón')) return '🌾';
+  if (n.includes('ajo')) return '🧄';
+  if (n.includes('repollo')) return '🥬';
+  if (n.includes('huevo')) return '🥚';
+  if (n.includes('poroto') || n.includes('arveja')) return '🫘';
+  if (n.includes('berro') || n.includes('espinaca') || n.includes('albahaca')) return '🌿';
+  if (n.includes('café') || n.includes('cocido')) return '☕';
+  if (n.includes('choclo')) return '🌽';
+  return '📦';
+}
+
+// ============================
 // INIT
-renderAll()
+// ============================
+setGreeting();
+renderDashboard();
+
+// ============================
+// PWA: MANIFEST + ICONS + SW
+// ============================
+(function initPWA() {
+  function makeIcon(size) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><rect width="${size}" height="${size}" rx="${size*0.22}" fill="#0f1117"/><text x="50%" y="52%" font-size="${size*0.44}" text-anchor="middle" dominant-baseline="central" font-family="Arial,sans-serif">🥗</text><text x="50%" y="84%" font-size="${size*0.13}" text-anchor="middle" dominant-baseline="central" font-family="Arial,sans-serif" fill="#22c55e" font-weight="bold">FOOD</text></svg>`;
+    return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+  }
+  const icon192 = makeIcon(192);
+  const icon512 = makeIcon(512);
+  const appleLink = document.getElementById('apple-icon');
+  if(appleLink) appleLink.href = icon192;
+  const manifest = {
+    name: "FoodControl PRO",
+    short_name: "FoodControl",
+    description: "Control de stock, recetas, plan alimentario y compra inteligente",
+    start_url: "./",
+    scope: "./",
+    display: "standalone",
+    orientation: "portrait",
+    background_color: "#0f1117",
+    theme_color: "#22c55e",
+    lang: "es",
+    id: "foodcontrol-pro",
+    categories: ["food","lifestyle","utilities"],
+    icons: [
+      { src: icon192, sizes: "192x192", type: "image/svg+xml", purpose: "any maskable" },
+      { src: icon512, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+  const manifestURL = URL.createObjectURL(blob);
+  const mlink = document.getElementById('pwa-manifest');
+  if(mlink) mlink.href = manifestURL;
+
+  )();
+
+
+// PWA Service Worker inline
+if ('serviceWorker' in navigator) {
+  const sw = `
+self.addEventListener('install', e => self.skipWaiting());
+self.addEventListener('activate', e => self.clients.claim());
+self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
+`;
+  const blob = new Blob([sw], {type:'application/javascript'});
+  navigator.serviceWorker.register('https://test-biblico.github.io/foodcontrol/sw.js', {scope: 'https://test-biblico.github.io/foodcontrol/'}), {scope:'/'})
+    .then(()=>console.log('SW OK'))
+    .catch(e=>console.warn('SW:',e));
+}
+
 </script>
 </body>
 </html>
